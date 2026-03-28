@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Routine">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Routine</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --surface2: #1c1c1c;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --text: #f0f0f0;
+      --text2: #888;
+      --text3: #555;
+      --green: #1D9E75;
+      --green-light: #0f6e56;
+      --green-bg: rgba(29,158,117,0.12);
+      --blue: #378ADD;
+      --blue-bg: rgba(55,138,221,0.12);
+      --amber: #EF9F27;
+      --amber-bg: rgba(239,159,39,0.1);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+    }
+
+    .app {
+      max-width: 430px;
+      margin: 0 auto;
+      padding: 0 0 100px;
+    }
+
+    /* Header */
+    .header {
+      padding: 60px 20px 20px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .date-text {
+      font-size: 13px;
+      color: var(--text3);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .greeting {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+      margin-top: 4px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--amber-bg);
+      border: 0.5px solid var(--amber);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: var(--amber);
+      font-weight: 500;
+    }
+
+    /* Progress ring */
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ring-wrap {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .ring-svg { transform: rotate(-90deg); }
+
+    .ring-bg { fill: none; stroke: var(--surface2); stroke-width: 4; }
+    .ring-fill { fill: none; stroke: var(--green); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+
+    .ring-pct {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .progress-info { flex: 1; }
+    .progress-label { font-size: 14px; color: var(--text2); margin-bottom: 4px; }
+    .progress-detail { font-size: 13px; color: var(--text3); }
+
+    /* Week dots */
+    .week-row {
+      display: flex;
+      gap: 6px;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    .week-dot {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .week-dot-label {
+      font-size: 10px;
+      color: var(--text3);
+      letter-spacing: 0.04em;
+    }
+
+    .week-dot-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .week-dot-circle.past { background: var(--green); border-color: var(--green); }
+    .week-dot-circle.today { border: 1.5px solid var(--green); }
+    .week-dot-circle svg { width: 10px; height: 10px; }
+
+    /* Sections */
+    .section { padding: 20px 16px 0; }
+    .section-label {
+      font-size: 11px;
+      color: var(--text3);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    /* Habit card */
+    .habit-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .habit-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      cursor: pointer;
+      border-bottom: 0.5px solid var(--border);
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .habit-row:last-child { border-bottom: none; }
+    .habit-row:active { background: var(--surface2); }
+    .habit-row.done { opacity: 0.45; }
+
+    .habit-row.flash::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--green);
+      opacity: 0;
+      animation: flash 0.3s ease-out;
+    }
+
+    @keyframes flash {
+      0% { opacity: 0.2; }
+      100% { opacity: 0; }
+    }
+
+    .check-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .habit-row.done .check-circle {
+      background: var(--green);
+      border-color: var(--green);
+      transform: scale(1.05);
+    }
+
+    .check-icon {
+      width: 12px;
+      height: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .habit-row.done .check-icon { opacity: 1; }
+
+    .habit-info { flex: 1; min-width: 0; }
+
+    .habit-name {
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .habit-row.done .habit-name {
+      text-decoration: line-through;
+      color: var(--text3);
+    }
+
+    .habit-sub {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    .habit-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .badge-sera { background: var(--blue-bg); color: var(--blue); }
+    .badge-mattina { background: var(--amber-bg); color: var(--amber); }
+    .badge-weekly { background: rgba(255,255,255,0.05); color: var(--text2); border: 0.5px solid var(--border2); }
+
+    /* Water */
+    .water-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border);
+      padding: 18px;
+      margin-bottom: 8px;
+    }
+
+    .water-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .water-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .water-title-sub {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    .water-amount {
+      text-align: right;
+    }
+
+    .water-ml {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .water-of {
+      font-size: 11px;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    .water-bar-bg {
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .water-bar-fill {
+      height: 100%;
+      background: var(--blue);
+      border-radius: 3px;
+      transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .glasses-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+    }
+
+    .glass-btn {
+      aspect-ratio: 1;
+      border-radius: 10px;
+      border: 1.5px solid var(--border2);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .glass-btn:active { transform: scale(0.88); }
+
+    .glass-btn.filled {
+      background: var(--blue-bg);
+      border-color: var(--blue);
+    }
+
+    .glass-btn svg { width: 16px; height: 16px; }
+
+    /* Bottom reset */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      background: var(--bg);
+      border-top: 0.5px solid var(--border);
+    }
+
+    .reset-btn {
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+      display: block;
+      padding: 14px;
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      color: var(--text3);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .reset-btn:active { background: var(--surface2); color: var(--text2); }
+
+    /* Night lock banner */
+    .night-banner {
+      background: rgba(239,159,39,0.1);
+      border: 0.5px solid var(--amber);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin: 16px;
+      display: none;
+    }
+
+    .night-banner.visible { display: block; }
+
+    .night-banner-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--amber);
+      margin-bottom: 4px;
+    }
+
+    .night-banner-text {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
+    /* Triderm hidden on non-days */
+    .hidden { display: none !important; }
+
+    /* Celebration */
+    .celebration {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .celebration.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .celebration-inner {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .celebration-emoji {
+      font-size: 64px;
+      display: block;
+      margin-bottom: 16px;
+      animation: bounce 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    @keyframes bounce {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+
+    .celebration-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .celebration-sub {
+      font-size: 15px;
+      color: var(--text2);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="date-text" id="dateText"></div>
+          <div class="greeting" id="greeting"></div>
+        </div>
+        <div class="streak-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--amber)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+          <span id="streakCount">0</span> giorni
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="ring-wrap">
+          <svg class="ring-svg" width="56" height="56" viewBox="0 0 56 56">
+            <circle class="ring-bg" cx="28" cy="28" r="24"/>
+            <circle class="ring-fill" id="ringFill" cx="28" cy="28" r="24"
+              stroke-dasharray="150.8"
+              stroke-dashoffset="150.8"/>
+          </svg>
+          <div class="ring-pct" id="ringPct">0%</div>
+        </div>
+        <div class="progress-info">
+          <div class="progress-label">completato oggi</div>
+          <div class="progress-detail" id="progressDetail">0 di 0 abitudini</div>
+        </div>
+      </div>
+
+      <div class="week-row" id="weekRow"></div>
+    </div>
+
+    <div class="night-banner" id="nightBanner">
+      <div class="night-banner-title">ora di sera — routine in attesa</div>
+      <div class="night-banner-text">Sono le 23:00. Completa la routine serale prima di aprire i social. Spunta tutte le voci sera per sbloccarli.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">mattina</div>
+      <div class="habit-card">
+        <div class="habit-row" data-id="dentiM" onclick="toggleHabit(this)">
+          <div class="check-circle">
+            <svg class="check-icon" viewBox="0 0 12 8" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="habit-info">
+            <div class="habit-name">denti</div>
+            <div class="habit-sub">al mattino</div>
+          </div>
+          <span class="habit-badge badge-mattina">mattina</span>
+        </div>
+        <div class="habit-row" data-id="acquaM" onclick="toggleHabit(this)">
+          <div class="check-circle">
+            <svg class="check-icon" viewBox="0 0 12 8" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="habit-info">
+            <div class="habit-name">primo bicchiere d'acqua</div>
+            <div class="habit-sub">appena sveglio</div>
+          </div>
+          <span class="habit-badge badge-mattina">mattina</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">acqua</div>
+      <div class="water-card">
+        <div class="water-top">
+          <div>
+            <div class="water-title">idratazione</div>
+            <div class="water-title-sub">ogni bicchiere = 275 ml</div>
+          </div>
+          <div class="water-amount">
+            <div class="water-ml"><span id="waterMl">0</span> ml</div>
+            <div class="water-of">/ 2200 ml</div>
+          </div>
+        </div>
+        <div class="water-bar-bg">
+          <div class="water-bar-fill" id="waterBarFill" style="width:0%"></div>
+        </div>
+        <div class="glasses-grid" id="glassesGrid"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">sera</div>
+      <div class="habit-card">
+        <div class="habit-row" data-id="dentiS" onclick="toggleHabit(this)">
+          <div class="check-circle">
+            <svg class="check-icon" viewBox="0 0 12 8" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="habit-info">
+            <div class="habit-name">denti</div>
+            <div class="habit-sub">prima di dormire</div>
+          </div>
+          <span class="habit-badge badge-sera">sera</span>
+        </div>
+        <div class="habit-row" data-id="detergente" onclick="toggleHabit(this)">
+          <div class="check-circle">
+            <svg class="check-icon" viewBox="0 0 12 8" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="habit-info">
+            <div class="habit-name">detergente viso</div>
+            <div class="habit-sub">yves rocher pure menthe</div>
+          </div>
+          <span class="habit-badge badge-sera">sera</span>
+        </div>
+        <div class="habit-row" data-id="idratante" onclick="toggleHabit(this)">
+          <div class="check-circle">
+            <svg class="check-icon" viewBox="0 0 12 8" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="habit-info">
+            <div class="habit-name">idratante viso</div>
+            <div class="habit-sub">oil-free, dopo il detergente</div>
+          </div>
+          <span class="habit-badge badge-sera">sera</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="tridermSection">
+      <div class="section-label">settimanale</div>
+      <div class="habit-card">
+        <div class="habit-row" data-id="triderm" onclick="toggleHabit(this)">
+          <div class="check-circle">
+            <svg class="check-icon" viewBox="0 0 12 8" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="habit-info">
+            <div class="habit-name">triderm ds</div>
+            <div class="habit-sub">lun · mer · ven — zone dermatite</div>
+          </div>
+          <span class="habit-badge badge-weekly">3x/sett</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height: 16px;"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="reset-btn" onclick="resetDay()">reset giornata</button>
+  </div>
+
+  <div class="celebration" id="celebration" onclick="this.classList.remove('show')">
+    <div class="celebration-inner">
+      <span class="celebration-emoji">🎉</span>
+      <div class="celebration-title">routine completata!</div>
+      <div class="celebration-sub">ottimo lavoro oggi</div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'routine_ale_v1';
+    const STREAK_KEY = 'routine_streak_v1';
+    const GLASS_ML = 275;
+    const TOTAL_GLASSES = 8;
+    const TRIDERM_DAYS = [1, 3, 5];
+    const DAY_NAMES = ['dom','lun','mar','mer','gio','ven','sab'];
+    const EVENING_HABITS = ['dentiS', 'detergente', 'idratante'];
+
+    let state = { habits: {}, glasses: 0, lastDate: '', celebrated: false };
+    let streakData = { count: 0, lastCompleted: '' };
+
+    function getToday() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (saved.lastDate === getToday()) {
+            state = saved;
+          } else {
+            state = { habits: {}, glasses: 0, lastDate: getToday(), celebrated: false };
+          }
+        } else {
+          state.lastDate = getToday();
+        }
+        const sRaw = localStorage.getItem(STREAK_KEY);
+        if (sRaw) streakData = JSON.parse(sRaw);
+      } catch(e) {
+        state.lastDate = getToday();
+      }
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch(e) {}
+    }
+
+    function saveStreak() {
+      try {
+        localStorage.setItem(STREAK_KEY, JSON.stringify(streakData));
+      } catch(e) {}
+    }
+
+    function toggleHabit(row) {
+      const id = row.dataset.id;
+      state.habits[id] = !state.habits[id];
+      row.classList.toggle('done', !!state.habits[id]);
+      row.classList.add('flash');
+      setTimeout(() => row.classList.remove('flash'), 300);
+      save();
+      updateProgress();
+      checkNightBanner();
+    }
+
+    function tapGlass(i) {
+      state.glasses = (state.glasses === i + 1) ? i : i + 1;
+      renderGlasses();
+      save();
+      updateProgress();
+    }
+
+    function renderGlasses() {
+      const grid = document.getElementById('glassesGrid');
+      grid.innerHTML = '';
+      for (let i = 0; i < TOTAL_GLASSES; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'glass-btn' + (i < state.glasses ? ' filled' : '');
+        btn.innerHTML = i < state.glasses
+          ? `<svg viewBox="0 0 24 24" fill="none"><path d="M5 3h14l-2 13H7L5 3z" stroke="#378ADD" stroke-width="2" fill="rgba(55,138,221,0.3)"/><path d="M7 16c0 2.2 2.2 4 5 4s5-1.8 5-4" stroke="#378ADD" stroke-width="1.5"/></svg>`
+          : `<svg viewBox="0 0 24 24" fill="none"><path d="M5 3h14l-2 13H7L5 3z" stroke="#555" stroke-width="2"/></svg>`;
+        btn.onclick = () => tapGlass(i);
+        grid.appendChild(btn);
+      }
+      const ml = state.glasses * GLASS_ML;
+      document.getElementById('waterMl').textContent = ml;
+      const pct = Math.min(100, Math.round((ml / (TOTAL_GLASSES * GLASS_ML)) * 100));
+      document.getElementById('waterBarFill').style.width = pct + '%';
+    }
+
+    function getActiveHabits() {
+      const today = new Date();
+      const dow = today.getDay();
+      const isTridermDay = TRIDERM_DAYS.includes(dow);
+      const all = ['dentiM', 'acquaM', 'dentiS', 'detergente', 'idratante'];
+      if (isTridermDay) all.push('triderm');
+      return all;
+    }
+
+    function updateProgress() {
+      const active = getActiveHabits();
+      let done = active.filter(id => !!state.habits[id]).length;
+      const waterDone = state.glasses >= TOTAL_GLASSES;
+      const total = active.length + 1;
+      if (waterDone) done++;
+
+      const pct = Math.round((done / total) * 100);
+      const circumference = 150.8;
+      const offset = circumference - (pct / 100) * circumference;
+      document.getElementById('ringFill').style.strokeDashoffset = offset;
+      document.getElementById('ringPct').textContent = pct + '%';
+      document.getElementById('progressDetail').textContent = `${done} di ${total} abitudini`;
+
+      if (pct === 100 && !state.celebrated) {
+        state.celebrated = true;
+        save();
+        setTimeout(() => {
+          document.getElementById('celebration').classList.add('show');
+          updateStreak();
+        }, 400);
+      }
+    }
+
+    function updateStreak() {
+      const today = getToday();
+      if (streakData.lastCompleted !== today) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yStr = yesterday.toISOString().split('T')[0];
+        if (streakData.lastCompleted === yStr) {
+          streakData.count++;
+        } else {
+          streakData.count = 1;
+        }
+        streakData.lastCompleted = today;
+        saveStreak();
+        document.getElementById('streakCount').textContent = streakData.count;
+      }
+    }
+
+    function renderWeek() {
+      const row = document.getElementById('weekRow');
+      const today = new Date();
+      const todayDow = today.getDay();
+      row.innerHTML = '';
+      for (let i = 0; i < 7; i++) {
+        const wrap = document.createElement('div');
+        wrap.className = 'week-dot';
+        const label = document.createElement('div');
+        label.className = 'week-dot-label';
+        label.textContent = DAY_NAMES[i];
+        const circle = document.createElement('div');
+        const isPast = i < todayDow;
+        const isToday = i === todayDow;
+        circle.className = 'week-dot-circle' + (isPast ? ' past' : '') + (isToday ? ' today' : '');
+        if (isPast) {
+          circle.innerHTML = `<svg viewBox="0 0 12 8" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        }
+        wrap.appendChild(label);
+        wrap.appendChild(circle);
+        row.appendChild(wrap);
+      }
+    }
+
+    function renderDate() {
+      const today = new Date();
+      const hour = today.getHours();
+      const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+      document.getElementById('dateText').textContent = today.toLocaleDateString('it-IT', opts);
+      let greeting = 'buongiorno';
+      if (hour >= 14 && hour < 19) greeting = 'buon pomeriggio';
+      else if (hour >= 19) greeting = 'buonasera';
+      document.getElementById('greeting').textContent = greeting + ', ale';
+    }
+
+    function checkTridermDay() {
+      const dow = new Date().getDay();
+      const section = document.getElementById('tridermSection');
+      section.classList.toggle('hidden', !TRIDERM_DAYS.includes(dow));
+    }
+
+    function checkNightBanner() {
+      const hour = new Date().getHours();
+      const isEvening = hour >= 23 || hour < 1;
+      const eveningDone = EVENING_HABITS.every(id => !!state.habits[id]);
+      const banner = document.getElementById('nightBanner');
+      banner.classList.toggle('visible', isEvening && !eveningDone);
+    }
+
+    function renderHabits() {
+      document.querySelectorAll('.habit-row').forEach(row => {
+        row.classList.toggle('done', !!state.habits[row.dataset.id]);
+      });
+    }
+
+    function resetDay() {
+      if (!confirm('Reset della giornata?')) return;
+      state = { habits: {}, glasses: 0, lastDate: getToday(), celebrated: false };
+      save();
+      renderHabits();
+      renderGlasses();
+      updateProgress();
+      checkNightBanner();
+    }
+
+    document.getElementById('streakCount').textContent = streakData.count;
+    load();
+    renderDate();
+    renderWeek();
+    renderHabits();
+    renderGlasses();
+    checkTridermDay();
+    checkNightBanner();
+    updateProgress();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    setInterval(() => {
+      checkNightBanner();
+      checkTridermDay();
+    }, 60000);
+  </script>
+</body>
+</html>
